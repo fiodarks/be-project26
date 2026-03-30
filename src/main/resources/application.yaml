@@ -5,8 +5,8 @@ spring:
     default: dev
   servlet:
     multipart:
-      max-file-size: 5MB
-      max-request-size: 6MB
+      max-file-size: 25MB
+      max-request-size: 30MB
   liquibase:
     enabled: true
     change-log: classpath:db/changelog/db.changelog-master.yaml
@@ -25,8 +25,8 @@ server:
       enabled: true
       force: true
   tomcat:
-    max-http-form-post-size: 6MB
-    max-swallow-size: 6MB
+    max-http-form-post-size: 30MB
+    max-swallow-size: 30MB
 
 archive:
   security:
