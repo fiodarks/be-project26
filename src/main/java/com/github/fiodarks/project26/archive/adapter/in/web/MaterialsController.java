@@ -26,8 +26,12 @@ import com.github.fiodarks.project26.archive.domain.model.PartialDate;
 import com.github.fiodarks.project26.archive.domain.model.UserId;
 import com.github.fiodarks.project26.users.application.port.in.GetUserAccountQuery;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -224,18 +228,23 @@ public class MaterialsController implements MaterialsApi {
     }
 
     @Override
+    @PostMapping(
+            value = "/materials",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
     public ResponseEntity<MaterialDTO> materialsPost(
-            String title,
-            String location,
-            String creationDate,
-            String description,
-            MultipartFile file,
-            String placeId,
-            Double lat,
-            Double lon,
-            UUID hierarchyId,
-            Map<String, String> metadata,
-            List<String> tags
+            @RequestParam("title") String title,
+            @RequestParam("location") String location,
+            @RequestParam("creationDate") String creationDate,
+            @RequestParam("description") String description,
+            @RequestPart("file") MultipartFile file,
+            @RequestParam(value = "placeId", required = false) String placeId,
+            @RequestParam(value = "lat", required = false) Double lat,
+            @RequestParam(value = "lon", required = false) Double lon,
+            @RequestParam(value = "hierarchyId", required = false) UUID hierarchyId,
+            @RequestParam(value = "metadata", required = false) Map<String, String> metadata,
+            @RequestParam(value = "tags", required = false) List<String> tags
     ) {
         var actor = actorResolver.requireActor();
 
