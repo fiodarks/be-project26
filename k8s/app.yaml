@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: project26-uploads
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: project26-api
+spec:
+  selector:
+    app: project26-api
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: project26-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: project26-api
+  template:
+    metadata:
+      labels:
+        app: project26-api
+    spec:
+      containers:
+        - name: api
+          image: project26:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: local
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/project26
+            - name: SPRING_DATASOURCE_USERNAME
+              value: postgres
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: password
+            - name: ARCHIVE_STORAGE_BASE_DIR
+              value: /data/uploads
+            - name: ARCHIVE_STORAGE_PUBLIC_BASE_URL
+              value: http://localhost:8080/api/v1
+            - name: ARCHIVE_CORS_ALLOWED_ORIGINS_0
+              value: http://localhost:5173
+          volumeMounts:
+            - name: uploads
+              mountPath: /data/uploads
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: project26-uploads
+

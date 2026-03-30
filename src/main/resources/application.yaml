@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: Project26
+  profiles:
+    default: dev
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 55MB
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  config:
+    import: optional:file:.env[.properties]
+
+server:
+  servlet:
+    context-path: /api/v1
+  tomcat:
+    max-http-form-post-size: 55MB
+    max-swallow-size: 55MB
+
+archive:
+  security:
+    jwt:
+      hmac-secret: ${ARCHIVE_SECURITY_JWT_HMAC_SECRET:dev-only-change-me-please-dev-only-change-me}
+    bootstrap:
+      admin-emails: []
+    google:
+      enabled: ${ARCHIVE_SECURITY_GOOGLE_ENABLED:false}
+      client-id: ${ARCHIVE_SECURITY_GOOGLE_CLIENT_ID:}
+      client-secret: ${ARCHIVE_SECURITY_GOOGLE_CLIENT_SECRET:}
+      redirect-uri: ${ARCHIVE_SECURITY_GOOGLE_REDIRECT_URI:http://localhost:5173/api/v1/auth/google/callback}
+  storage:
+    base-dir: ${user.home}/.project26/uploads
+    public-base-url: ""
+  geocoding:
+    nominatim:
+      base-url: "https://nominatim.openstreetmap.org"
+      user-agent: "Project26/1.0 (contact: local-dev)"

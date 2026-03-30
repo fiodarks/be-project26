@@ -1,0 +1,105 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.0.3'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.openapi.generator' version '7.3.0'
+}
+
+group = 'com.github.fiodarks'
+version = '0.0.1-SNAPSHOT'
+description = 'Project26'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+    testCompileOnly {
+        extendsFrom testAnnotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-liquibase'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testCompileOnly 'org.projectlombok:lombok'
+    runtimeOnly 'com.h2database:h2'
+    runtimeOnly 'org.postgresql:postgresql'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.2'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+openApiGenerate {
+    generatorName = "spring"
+    inputSpec = "$rootDir/src/main/resources/openapi/openapi.yaml"
+    outputDir = "$buildDir/generated/openapi"
+
+    apiPackage = "com.github.fiodarks.project26.adapter.in.web.api"
+    modelPackage = "com.github.fiodarks.project26.adapter.in.web.dto"
+
+    // Fail fast if the spec is invalid/unresolvable.
+    validateSpec = true
+
+    // Generate only interfaces + DTO models (no docs/tests/supporting files).
+    globalProperties = [
+            apis            : "",
+            models          : "",
+            apiDocs         : "false",
+            modelDocs       : "false",
+            apiTests        : "false",
+            modelTests      : "false",
+            supportingFiles : "false"
+    ]
+
+    configOptions = [
+            interfaceOnly: "true",
+            useSpringBoot3: "true",
+            useTags: "true",
+
+            useBeanValidation: "true",
+            performBeanValidation: "true",
+            useRecords: "true",
+            openApiNullable: "false"
+    ]
+
+    // Ensure file uploads map to Spring's MultipartFile for multipart/form-data endpoints.
+    typeMappings = [
+            file: "org.springframework.web.multipart.MultipartFile"
+    ]
+    importMappings = [
+            MultipartFile: "org.springframework.web.multipart.MultipartFile"
+    ]
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs += "$buildDir/generated/openapi/src/main/java"
+        }
+    }
+}
+
+compileJava.dependsOn tasks.openApiGenerate

@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - include:
+      file: changes/001-initial-schema.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/002-add-optimistic-locking.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/003-hierarchy-node-status.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/004-users-and-roles.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/005-material-created-by.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/006-user-surname.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/007-user-password-hash.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/008-audit-events.sql
+      relativeToChangelogFile: true

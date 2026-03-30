@@ -1,0 +1,26 @@
+materialFile:
+  get:
+    tags:
+      - Files
+    summary: Download material file
+    description: >
+      Returns the original uploaded file for the specified material id.
+      Public endpoint (no authentication required).
+    security: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Binary file content.
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      '404':
+        description: File not found.

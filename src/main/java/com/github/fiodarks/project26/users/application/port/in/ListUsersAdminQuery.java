@@ -1,0 +1,8 @@
+package com.github.fiodarks.project26.users.application.port.in;
+
+import com.github.fiodarks.project26.security.Actor;
+
+public interface ListUsersAdminQuery {
+    UsersAdminPage listUsers(Actor actor, ListUsersAdminRequest request);
+}
+
