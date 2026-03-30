@@ -98,14 +98,22 @@ public class ApiExceptionHandler {
         var configuredMaxFileSize = env.getProperty("spring.servlet.multipart.max-file-size");
         var configuredMaxRequestSize = env.getProperty("spring.servlet.multipart.max-request-size");
 
+        var rootCause = rootCause(e);
+        var rootCauseClass = rootCause == null ? null : rootCause.getClass().getName();
+        var rootCauseMessage = rootCause == null ? null : rootCause.getMessage();
+
         log.warn(
-                "Upload rejected: payload too large{} uri='{}' contentType='{}' contentLength={} configuredMaxFileSize='{}' configuredMaxRequestSize='{}'",
+                "Upload rejected: payload too large{} uri='{}' contentType='{}' contentLength={} configuredMaxFileSize='{}' configuredMaxRequestSize='{}' maxUploadSizeBytes={} exceptionMessage='{}' rootCauseClass='{}' rootCauseMessage='{}'",
                 suffix,
                 requestUri,
                 contentType,
                 contentLength,
                 configuredMaxFileSize,
-                configuredMaxRequestSize
+                configuredMaxRequestSize,
+                maxUploadSize,
+                e.getMessage(),
+                rootCauseClass,
+                rootCauseMessage
         );
         var response = new ErrorResponse("PAYLOAD_TOO_LARGE", "Uploaded file is too large" + suffix)
                 .putDetailsItem("contentLength", Long.toString(contentLength))
@@ -117,11 +125,29 @@ public class ApiExceptionHandler {
         if (configuredMaxRequestSize != null) {
             response.putDetailsItem("configuredMaxRequestSize", configuredMaxRequestSize);
         }
-        if (maxUploadSize > 0) {
-            response.putDetailsItem("maxUploadSizeBytes", Long.toString(maxUploadSize));
+        response.putDetailsItem("maxUploadSizeBytes", Long.toString(maxUploadSize));
+        if (e.getMessage() != null && !e.getMessage().isBlank()) {
+            response.putDetailsItem("exceptionMessage", e.getMessage());
+        }
+        if (rootCauseClass != null && !rootCauseClass.isBlank()) {
+            response.putDetailsItem("rootCauseClass", rootCauseClass);
+        }
+        if (rootCauseMessage != null && !rootCauseMessage.isBlank()) {
+            response.putDetailsItem("rootCauseMessage", rootCauseMessage);
         }
 
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(response);
+    }
+
+    private static Throwable rootCause(Throwable t) {
+        if (t == null) {
+            return null;
+        }
+        var current = t;
+        while (current.getCause() != null && current.getCause() != current) {
+            current = current.getCause();
+        }
+        return current == t ? null : current;
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
