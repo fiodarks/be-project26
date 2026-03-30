@@ -4,6 +4,8 @@ import com.github.fiodarks.project26.adapter.in.web.dto.ErrorResponse;
 import com.github.fiodarks.project26.archive.application.exception.ForbiddenOperationException;
 import com.github.fiodarks.project26.archive.application.exception.NotFoundException;
 import com.github.fiodarks.project26.archive.application.exception.ValidationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -20,6 +22,8 @@ import java.util.Locale;
 
 @ControllerAdvice
 public class ApiExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<ErrorResponse> handleValidation(ValidationException e) {
@@ -70,6 +74,7 @@ public class ApiExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException e) {
         var maxUploadSize = e.getMaxUploadSize();
         var suffix = maxUploadSize > 0 ? " (max: %s)".formatted(formatBytes(maxUploadSize)) : "";
+        log.warn("Upload rejected: payload too large{}", suffix);
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
                 .body(new ErrorResponse("PAYLOAD_TOO_LARGE", "Uploaded file is too large" + suffix));
     }
@@ -84,6 +89,7 @@ public class ApiExceptionHandler {
         var message = "Unsupported Content-Type: '%s'. Supported: %s. For photo uploads use 'multipart/form-data'."
                 .formatted(provided, supported);
 
+        log.warn("Request rejected: unsupported media type. Provided='{}' Supported={}", provided, supported);
         return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
                 .body(new ErrorResponse("UNSUPPORTED_MEDIA_TYPE", message));
     }
