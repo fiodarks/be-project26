@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import jakarta.validation.ConstraintViolationException;
+import java.util.Locale;
 
 @ControllerAdvice
 public class ApiExceptionHandler {
@@ -67,8 +68,10 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException e) {
+        var maxUploadSize = e.getMaxUploadSize();
+        var suffix = maxUploadSize > 0 ? " (max: %s)".formatted(formatBytes(maxUploadSize)) : "";
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
-                .body(new ErrorResponse("PAYLOAD_TOO_LARGE", "Uploaded file is too large"));
+                .body(new ErrorResponse("PAYLOAD_TOO_LARGE", "Uploaded file is too large" + suffix));
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
@@ -83,5 +86,22 @@ public class ApiExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
                 .body(new ErrorResponse("UNSUPPORTED_MEDIA_TYPE", message));
+    }
+
+    private static String formatBytes(long bytes) {
+        if (bytes < 0) {
+            return "unknown";
+        }
+        if (bytes < 1024) {
+            return bytes + " B";
+        }
+        double value = bytes;
+        String[] units = {"B", "KB", "MB", "GB", "TB"};
+        int unitIndex = 0;
+        while (value >= 1024 && unitIndex < units.length - 1) {
+            value /= 1024.0;
+            unitIndex++;
+        }
+        return String.format(Locale.ROOT, "%.1f %s", value, units[unitIndex]);
     }
 }

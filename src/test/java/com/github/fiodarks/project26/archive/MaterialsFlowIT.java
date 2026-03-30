@@ -126,6 +126,31 @@ class MaterialsFlowIT {
     }
 
     @Test
+    void upload_rejects_files_larger_than_5mb() throws Exception {
+        var creatorId = UUID.randomUUID();
+        var hierarchyId = UUID.fromString("33333333-3333-3333-3333-333333333333");
+
+        var bytesOverLimit = new byte[6 * 1024 * 1024];
+        var file = new MockMultipartFile(
+                "file",
+                "too-big.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                bytesOverLimit
+        );
+
+        mvc.perform(multipart("/api/v1/materials")
+                        .file(file)
+                        .param("title", "My photo")
+                        .param("location", "Warsaw")
+                        .param("creationDate", "1984-05")
+                        .param("description", "Test description")
+                        .param("hierarchyId", hierarchyId.toString())
+                        .with(jwt().jwt(j -> j.subject(creatorId.toString()).claim("roles", List.of("CREATOR")))))
+                .andExpect(status().isPayloadTooLarge())
+                .andExpect(jsonPath("$.code").value("PAYLOAD_TOO_LARGE"));
+    }
+
+    @Test
     void viewer_can_filter_by_bbox_tags_metadata_and_hierarchy_affiliation() throws Exception {
         var creatorId = UUID.randomUUID();
         var cityId = UUID.fromString("22222222-2222-2222-2222-222222222222");

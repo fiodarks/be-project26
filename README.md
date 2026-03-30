@@ -72,6 +72,8 @@ curl -X POST "http://localhost:8080/api/v1/materials" \
   -F "file=@./photo.jpg;type=image/jpeg"
 ```
 
+Upload limits are configured via `spring.servlet.multipart.max-file-size` / `max-request-size` in `src/main/resources/application.yaml` (default: `5MB` / `6MB`).
+
 Non-functional UI requirements (WCAG 2.1 AA, responsive UI, theme switching) are handled by the frontend; this backend focuses on the REST API and security rules.
 
 ## Build

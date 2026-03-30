@@ -129,6 +129,12 @@ materials:
           application/json:
             schema:
               $ref: '../components/components.yaml#/components/schemas/ErrorResponse'
+      '413':
+        description: Uploaded file is too large.
+        content:
+          application/json:
+            schema:
+              $ref: '../components/components.yaml#/components/schemas/ErrorResponse'
       '400':
         description: Validation failed (missing required fields).
         content:
