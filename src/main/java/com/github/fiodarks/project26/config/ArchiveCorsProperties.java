@@ -6,11 +6,16 @@ import java.util.List;
 import java.util.Objects;
 
 @ConfigurationProperties(prefix = "archive.cors")
-public record ArchiveCorsProperties(List<String> allowedOrigins) {
+public record ArchiveCorsProperties(List<String> allowedOrigins, List<String> allowedOriginPatterns) {
     public ArchiveCorsProperties {
-        allowedOrigins = allowedOrigins == null
+        allowedOrigins = normalize(allowedOrigins);
+        allowedOriginPatterns = normalize(allowedOriginPatterns);
+    }
+
+    private static List<String> normalize(List<String> values) {
+        return values == null
                 ? List.of()
-                : allowedOrigins.stream()
+                : values.stream()
                 .filter(Objects::nonNull)
                 .map(String::trim)
                 .filter(s -> !s.isBlank())

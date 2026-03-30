@@ -14,7 +14,11 @@ public class CorsConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource(ArchiveCorsProperties properties) {
         var cors = new CorsConfiguration();
-        cors.setAllowedOrigins(properties.allowedOrigins());
+        if (!properties.allowedOriginPatterns().isEmpty()) {
+            cors.setAllowedOriginPatterns(properties.allowedOriginPatterns());
+        } else {
+            cors.setAllowedOrigins(properties.allowedOrigins());
+        }
         cors.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         cors.setAllowedHeaders(List.of("*"));
         cors.setMaxAge(3600L);
