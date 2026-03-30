@@ -4,6 +4,7 @@ import com.github.fiodarks.project26.adapter.in.web.dto.ErrorResponse;
 import com.github.fiodarks.project26.archive.application.exception.ForbiddenOperationException;
 import com.github.fiodarks.project26.archive.application.exception.NotFoundException;
 import com.github.fiodarks.project26.archive.application.exception.ValidationException;
+import org.springframework.core.env.Environment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -16,6 +17,8 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import jakarta.validation.ConstraintViolationException;
 import java.util.Locale;
@@ -24,6 +27,12 @@ import java.util.Locale;
 public class ApiExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
+
+    private final Environment env;
+
+    public ApiExceptionHandler(Environment env) {
+        this.env = env;
+    }
 
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<ErrorResponse> handleValidation(ValidationException e) {
@@ -74,9 +83,45 @@ public class ApiExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException e) {
         var maxUploadSize = e.getMaxUploadSize();
         var suffix = maxUploadSize > 0 ? " (max: %s)".formatted(formatBytes(maxUploadSize)) : "";
-        log.warn("Upload rejected: payload too large{}", suffix);
-        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
-                .body(new ErrorResponse("PAYLOAD_TOO_LARGE", "Uploaded file is too large" + suffix));
+
+        long contentLength = -1;
+        String contentType = null;
+        String requestUri = null;
+        var attrs = RequestContextHolder.getRequestAttributes();
+        if (attrs instanceof ServletRequestAttributes servletAttrs) {
+            var request = servletAttrs.getRequest();
+            contentLength = request.getContentLengthLong();
+            contentType = request.getContentType();
+            requestUri = request.getRequestURI();
+        }
+
+        var configuredMaxFileSize = env.getProperty("spring.servlet.multipart.max-file-size");
+        var configuredMaxRequestSize = env.getProperty("spring.servlet.multipart.max-request-size");
+
+        log.warn(
+                "Upload rejected: payload too large{} uri='{}' contentType='{}' contentLength={} configuredMaxFileSize='{}' configuredMaxRequestSize='{}'",
+                suffix,
+                requestUri,
+                contentType,
+                contentLength,
+                configuredMaxFileSize,
+                configuredMaxRequestSize
+        );
+        var response = new ErrorResponse("PAYLOAD_TOO_LARGE", "Uploaded file is too large" + suffix)
+                .putDetailsItem("contentLength", Long.toString(contentLength))
+                .putDetailsItem("contentType", contentType == null ? "unknown" : contentType)
+                .putDetailsItem("uri", requestUri == null ? "unknown" : requestUri);
+        if (configuredMaxFileSize != null) {
+            response.putDetailsItem("configuredMaxFileSize", configuredMaxFileSize);
+        }
+        if (configuredMaxRequestSize != null) {
+            response.putDetailsItem("configuredMaxRequestSize", configuredMaxRequestSize);
+        }
+        if (maxUploadSize > 0) {
+            response.putDetailsItem("maxUploadSizeBytes", Long.toString(maxUploadSize));
+        }
+
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(response);
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
