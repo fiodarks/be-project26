@@ -196,6 +196,7 @@ public class ArchiveApplicationService implements
                 .placeId(request.placeId())
                 .searchPhrase(request.searchPhrase())
                 .hierarchyIds(hierarchyIds)
+                .createdBy(request.createdBy())
                 .dateFrom(request.dateFrom())
                 .dateTo(request.dateTo())
                 .bbox(request.bbox())

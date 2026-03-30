@@ -164,6 +164,10 @@ public class JpaMaterialRepositoryAdapter implements MaterialRepositoryPort, Mat
             predicates.add(cb.equal(root.get("placeId"), criteria.placeId()));
         }
 
+        if (criteria.createdBy() != null) {
+            predicates.add(cb.equal(root.get("createdBy"), criteria.createdBy().value()));
+        }
+
         if (criteria.hierarchyIds() != null && !criteria.hierarchyIds().isEmpty()) {
             predicates.add(root.get("hierarchyId").in(criteria.hierarchyIds().stream().map(id -> id.value()).toList()));
         }

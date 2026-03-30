@@ -23,6 +23,7 @@ import com.github.fiodarks.project26.archive.domain.model.GeoPoint;
 import com.github.fiodarks.project26.archive.domain.model.HierarchyNodeId;
 import com.github.fiodarks.project26.archive.domain.model.MaterialId;
 import com.github.fiodarks.project26.archive.domain.model.PartialDate;
+import com.github.fiodarks.project26.archive.domain.model.UserId;
 import com.github.fiodarks.project26.users.application.port.in.GetUserAccountQuery;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -58,7 +59,8 @@ public class MaterialsController implements MaterialsApi {
             String search,
             List<String> filter,
             List<String> tags,
-            UUID hierarchyLevelId
+            UUID hierarchyLevelId,
+            UUID userId
     ) {
         var from = toNullable(dateFrom, d -> PartialDate.parse(d).lowerBoundInclusive());
         var to = toNullable(dateTo, d -> PartialDate.parse(d).upperBoundInclusive());
@@ -99,6 +101,7 @@ public class MaterialsController implements MaterialsApi {
         var request = SearchMaterialsRequest.builder()
                 .searchPhrase(search)
                 .hierarchyLevelId(toNullable(hierarchyLevelId, HierarchyNodeId::new))
+                .createdBy(toNullable(userId, UserId::new))
                 .dateFrom(from)
                 .dateTo(to)
                 .bbox(geoBbox)

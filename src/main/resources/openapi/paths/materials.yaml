@@ -74,6 +74,13 @@ materials:
           type: string
           format: uuid
         description: Filter by hierarchy node identifier.
+      - name: userId
+        in: query
+        schema:
+          type: string
+          format: uuid
+        required: false
+        description: Optional owner user id; when provided, returns only materials created by this user.
     responses:
       '200':
         description: Map-ready points grouped by coordinates.
@@ -116,6 +123,12 @@ materials:
           application/json:
             schema:
               $ref: '../components/components.yaml#/components/schemas/MaterialDTO'
+      '415':
+        description: Unsupported Media Type (use multipart/form-data for file upload).
+        content:
+          application/json:
+            schema:
+              $ref: '../components/components.yaml#/components/schemas/ErrorResponse'
       '400':
         description: Validation failed (missing required fields).
         content:

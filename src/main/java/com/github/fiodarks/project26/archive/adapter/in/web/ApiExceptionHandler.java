@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -68,5 +69,19 @@ public class ApiExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException e) {
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
                 .body(new ErrorResponse("PAYLOAD_TOO_LARGE", "Uploaded file is too large"));
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleUnsupportedMediaType(HttpMediaTypeNotSupportedException e) {
+        var provided = e.getContentType() == null ? "unknown" : e.getContentType().toString();
+        var supported = e.getSupportedMediaTypes() == null || e.getSupportedMediaTypes().isEmpty()
+                ? "unknown"
+                : e.getSupportedMediaTypes().toString();
+
+        var message = "Unsupported Content-Type: '%s'. Supported: %s. For photo uploads use 'multipart/form-data'."
+                .formatted(provided, supported);
+
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                .body(new ErrorResponse("UNSUPPORTED_MEDIA_TYPE", message));
     }
 }

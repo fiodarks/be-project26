@@ -19,9 +19,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -108,6 +110,19 @@ class MaterialsFlowIT {
         mvc.perform(delete("/api/v1/materials/{id}", materialId)
                         .with(jwt().jwt(j -> j.subject(creatorId.toString()).claim("roles", List.of("CREATOR")))))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void upload_rejects_non_multipart_content_type_with_helpful_error() throws Exception {
+        var creatorId = UUID.randomUUID();
+
+        mvc.perform(post("/api/v1/materials")
+                        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                        .content("fake-image".getBytes())
+                        .with(jwt().jwt(j -> j.subject(creatorId.toString()).claim("roles", List.of("CREATOR")))))
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(jsonPath("$.code").value("UNSUPPORTED_MEDIA_TYPE"))
+                .andExpect(jsonPath("$.message").value(containsString("multipart/form-data")));
     }
 
     @Test
@@ -434,6 +449,61 @@ class MaterialsFlowIT {
                 .andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.data[0].thumbnailUrl").exists())
                 .andExpect(jsonPath("$.notFoundIds.length()").value(1));
+    }
+
+    @Test
+    void materials_search_can_be_filtered_by_user_id() throws Exception {
+        var creatorA = UUID.randomUUID();
+        var creatorB = UUID.randomUUID();
+        var hierarchyId = UUID.fromString("33333333-3333-3333-3333-333333333333");
+
+        var file = new MockMultipartFile(
+                "file",
+                "photo.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                "fake-image".getBytes()
+        );
+
+        var createdAJson = mvc.perform(multipart("/api/v1/materials")
+                        .file(file)
+                        .param("title", "A photo")
+                        .param("location", "Warsaw")
+                        .param("creationDate", "1999")
+                        .param("description", "A")
+                        .param("hierarchyId", hierarchyId.toString())
+                        .param("lat", "52.25")
+                        .param("lon", "21.01")
+                        .with(jwt().jwt(j -> j.subject(creatorA.toString()).claim("roles", List.of("CREATOR")))))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        var createdBJson = mvc.perform(multipart("/api/v1/materials")
+                        .file(file)
+                        .param("title", "B photo")
+                        .param("location", "Warsaw")
+                        .param("creationDate", "1999")
+                        .param("description", "B")
+                        .param("hierarchyId", hierarchyId.toString())
+                        .param("lat", "52.25")
+                        .param("lon", "21.01")
+                        .with(jwt().jwt(j -> j.subject(creatorB.toString()).claim("roles", List.of("CREATOR")))))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        var materialAId = objectMapper.readTree(createdAJson).get("id").asText();
+        objectMapper.readTree(createdBJson).get("id").asText(); // ensure JSON is valid
+
+        mvc.perform(get("/api/v1/materials")
+                        .param("bbox", "20.8257837,52.1779306,21.1703081,52.3058533")
+                        .param("userId", creatorA.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalPhotos").value(1))
+                .andExpect(jsonPath("$.points[0].photos[0].id").value(materialAId))
+                .andExpect(jsonPath("$.points[0].photos[0].ownerId").value(creatorA.toString()));
     }
 
     private static Path createUploadsDir() {

@@ -2,6 +2,7 @@ package com.github.fiodarks.project26.archive.application.port.in;
 
 import com.github.fiodarks.project26.archive.domain.model.HierarchyNodeId;
 import com.github.fiodarks.project26.archive.domain.model.GeoBoundingBox;
+import com.github.fiodarks.project26.archive.domain.model.UserId;
 import lombok.Builder;
 
 import java.time.LocalDate;
@@ -15,6 +16,7 @@ public record SearchMaterialsRequest(
         String placeId,
         String searchPhrase,
         HierarchyNodeId hierarchyLevelId,
+        UserId createdBy,
         LocalDate dateFrom,
         LocalDate dateTo,
         GeoBoundingBox bbox,

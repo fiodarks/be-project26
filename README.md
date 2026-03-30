@@ -60,6 +60,18 @@ Roles in the system: `ADMIN`, `VIEWER`, `CREATOR`.
   - upload material + required metadata: `POST /materials` (multipart/form-data)
   - update/delete own materials (admins can override): `PUT /materials/{id}`, `DELETE /materials/{id}`
 
+Upload example (note: do **not** set `Content-Type` manually; it must be `multipart/form-data` with a boundary):
+
+```bash
+curl -X POST "http://localhost:8080/api/v1/materials" \
+  -H "Authorization: Bearer <token>" \
+  -F "title=My photo" \
+  -F "location=Warsaw" \
+  -F "creationDate=1984-05" \
+  -F "description=Test description" \
+  -F "file=@./photo.jpg;type=image/jpeg"
+```
+
 Non-functional UI requirements (WCAG 2.1 AA, responsive UI, theme switching) are handled by the frontend; this backend focuses on the REST API and security rules.
 
 ## Build
