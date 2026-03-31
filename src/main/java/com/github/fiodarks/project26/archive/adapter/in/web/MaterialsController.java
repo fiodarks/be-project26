@@ -2,9 +2,12 @@ package com.github.fiodarks.project26.archive.adapter.in.web;
 
 import com.github.fiodarks.project26.adapter.in.web.api.MaterialsApi;
 import com.github.fiodarks.project26.adapter.in.web.dto.MaterialDTO;
+import com.github.fiodarks.project26.adapter.in.web.dto.MaterialMapPhoto;
 import com.github.fiodarks.project26.adapter.in.web.dto.MaterialMapResponse;
+import com.github.fiodarks.project26.adapter.in.web.dto.MaterialMapPoint;
 import com.github.fiodarks.project26.adapter.in.web.dto.MaterialPreviewsRequest;
 import com.github.fiodarks.project26.adapter.in.web.dto.MaterialPreviewsResponse;
+import com.github.fiodarks.project26.adapter.in.web.dto.MaterialPreviewDTO;
 import com.github.fiodarks.project26.adapter.in.web.dto.UpdateMaterialCommand;
 import com.github.fiodarks.project26.archive.adapter.in.web.mapper.MaterialMapWebMapper;
 import com.github.fiodarks.project26.archive.adapter.in.web.mapper.MaterialPreviewWebMapper;
@@ -37,6 +40,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -114,6 +118,7 @@ public class MaterialsController implements MaterialsApi {
                 .build();
 
         var items = archive.search(request);
+        var authorsById = resolveAuthorsById(items);
 
         var grouped = new LinkedHashMap<MaterialMapWebMapper.CoordKey, List<com.github.fiodarks.project26.archive.domain.model.Material>>();
         for (var material : items) {
@@ -127,6 +132,7 @@ public class MaterialsController implements MaterialsApi {
         var points = grouped.entrySet().stream()
                 .map(e -> MaterialMapWebMapper.toPointDto(e.getKey(), e.getValue()))
                 .toList();
+        enrichMapPointsWithAuthorNames(points, authorsById);
 
         var response = new MaterialMapResponse();
         response.setPoints(points);
@@ -149,12 +155,16 @@ public class MaterialsController implements MaterialsApi {
 
         var materialIds = ids.stream().map(MaterialId::new).toList();
         var materials = archive.getByIds(actor, materialIds);
+        var authorsById = resolveAuthorsById(materials);
 
         var found = materials.stream().map(m -> m.id().value()).collect(Collectors.toSet());
         var notFoundIds = ids.stream().filter(id -> !found.contains(id)).toList();
 
+        var previews = materials.stream().map(MaterialPreviewWebMapper::toDto).toList();
+        enrichMaterialPreviewsWithAuthorNames(previews, authorsById);
+
         var response = new MaterialPreviewsResponse();
-        response.setData(materials.stream().map(MaterialPreviewWebMapper::toDto).toList());
+        response.setData(previews);
         response.setNotFoundIds(notFoundIds);
         return ResponseEntity.ok(response);
     }
@@ -292,5 +302,87 @@ public class MaterialsController implements MaterialsApi {
         } catch (IOException e) {
             throw new IllegalStateException("Failed to read uploaded file", e);
         }
+    }
+
+    private record AuthorNames(String name, String surname) {
+    }
+
+    private Map<UUID, AuthorNames> resolveAuthorsById(List<com.github.fiodarks.project26.archive.domain.model.Material> materials) {
+        Objects.requireNonNull(materials, "materials");
+
+        var userIds = materials.stream()
+                .map(com.github.fiodarks.project26.archive.domain.model.Material::createdBy)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        if (userIds.isEmpty()) {
+            return Map.of();
+        }
+
+        var resolved = new HashMap<UUID, AuthorNames>(Math.max(16, userIds.size() * 2));
+        for (var userId : userIds) {
+            userAccounts.findById(userId).ifPresent(account -> resolved.put(
+                    userId.value(),
+                    new AuthorNames(account.name(), account.surname())
+            ));
+        }
+        return Map.copyOf(resolved);
+    }
+
+    private static void enrichMapPointsWithAuthorNames(List<MaterialMapPoint> points, Map<UUID, AuthorNames> authorsById) {
+        Objects.requireNonNull(points, "points");
+        Objects.requireNonNull(authorsById, "authorsById");
+        if (authorsById.isEmpty()) {
+            return;
+        }
+        for (var point : points) {
+            if (point == null || point.getPhotos() == null || point.getPhotos().isEmpty()) {
+                continue;
+            }
+            for (var photo : point.getPhotos()) {
+                enrichMaterialMapPhoto(photo, authorsById);
+            }
+        }
+    }
+
+    private static void enrichMaterialPreviewsWithAuthorNames(List<MaterialPreviewDTO> previews, Map<UUID, AuthorNames> authorsById) {
+        Objects.requireNonNull(previews, "previews");
+        Objects.requireNonNull(authorsById, "authorsById");
+        if (authorsById.isEmpty()) {
+            return;
+        }
+        for (var preview : previews) {
+            if (preview == null) {
+                continue;
+            }
+            var ownerId = preview.getOwnerId();
+            if (ownerId == null) {
+                continue;
+            }
+            var author = authorsById.get(ownerId);
+            if (author == null) {
+                continue;
+            }
+            preview.setAuthorName(author.name());
+            preview.setAuthorSurname(author.surname());
+        }
+    }
+
+    private static void enrichMaterialMapPhoto(MaterialMapPhoto photo, Map<UUID, AuthorNames> authorsById) {
+        Objects.requireNonNull(authorsById, "authorsById");
+        if (photo == null) {
+            return;
+        }
+        var ownerId = photo.getOwnerId();
+        if (ownerId == null) {
+            return;
+        }
+        var author = authorsById.get(ownerId);
+        if (author == null) {
+            return;
+        }
+        photo.setAuthorName(author.name());
+        photo.setAuthorSurname(author.surname());
     }
 }

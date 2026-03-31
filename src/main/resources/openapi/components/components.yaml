@@ -268,6 +268,7 @@ components:
       type: object
       required:
         - id
+        - ownerId
         - title
         - location
         - creationDate
@@ -279,6 +280,10 @@ components:
         id:
           type: string
           format: uuid
+        ownerId:
+          type: string
+          format: uuid
+          description: Creator user id (owner) of the uploaded material/photo.
         title:
           type: string
         location:
@@ -636,12 +641,24 @@ components:
       type: object
       required:
         - id
+        - ownerId
         - title
         - year
       properties:
         id:
           type: string
           format: uuid
+        ownerId:
+          type: string
+          format: uuid
+        authorName:
+          type: string
+          nullable: true
+          description: Material author's first name (resolved by server from ownerId).
+        authorSurname:
+          type: string
+          nullable: true
+          description: Material author's surname/last name (resolved by server from ownerId).
         title:
           type: string
         year:
@@ -663,6 +680,7 @@ components:
       type: object
       required:
         - id
+        - ownerId
         - title
         - year
         - thumbnailUrl
@@ -670,6 +688,17 @@ components:
         id:
           type: string
           format: uuid
+        ownerId:
+          type: string
+          format: uuid
+        authorName:
+          type: string
+          nullable: true
+          description: Material author's first name (resolved by server from ownerId).
+        authorSurname:
+          type: string
+          nullable: true
+          description: Material author's surname/last name (resolved by server from ownerId).
         title:
           type: string
         year:

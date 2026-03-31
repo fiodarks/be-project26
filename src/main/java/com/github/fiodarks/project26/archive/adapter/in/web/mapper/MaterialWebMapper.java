@@ -12,16 +12,17 @@ import java.util.Objects;
 public final class MaterialWebMapper {
     public static MaterialDTO toDto(Material material, String authorName, String authorSurname) {
         Objects.requireNonNull(material, "material");
-        var dto = new MaterialDTO(
-                material.id().value(),
-                material.title(),
-                material.location(),
-                material.creationDate().raw(),
-                material.description(),
-                material.hierarchyId().value(),
-                material.metadata(),
-                material.createdAt()
-        );
+        Objects.requireNonNull(material.createdBy(), "material.createdBy");
+
+        var dto = new MaterialDTO();
+        dto.setId(material.id().value());
+        dto.setOwnerId(material.createdBy().value());
+        dto.setTitle(material.title());
+        dto.setLocation(material.location());
+        dto.setCreationDate(material.creationDate().raw());
+        dto.setDescription(material.description());
+        dto.setHierarchyId(material.hierarchyId().value());
+        dto.setCreatedAt(material.createdAt());
 
         dto.setAuthorName(authorName);
         dto.setAuthorSurname(authorSurname);

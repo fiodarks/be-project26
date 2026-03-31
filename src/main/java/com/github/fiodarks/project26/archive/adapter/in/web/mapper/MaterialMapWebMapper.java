@@ -62,12 +62,13 @@ public final class MaterialMapWebMapper {
 
     public static MaterialMapPhoto toPhotoDto(Material material) {
         Objects.requireNonNull(material, "material");
+        Objects.requireNonNull(material.createdBy(), "material.createdBy");
 
         var dto = new MaterialMapPhoto();
         dto.setId(material.id().value());
+        dto.setOwnerId(material.createdBy().value());
         dto.setTitle(material.title());
         dto.setYear(material.creationDate().lowerBoundInclusive().getYear());
         return dto;
     }
 }
-
